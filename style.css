@@ -90,6 +90,39 @@ body {
     box-shadow: 4px 0 24px rgba(0,0,0,0.1);
     flex-shrink: 0;
     z-index: 10;
+    transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; /* relative for absolute toggle button */
+}
+
+.sidebar.collapsed {
+    margin-left: -260px;
+}
+
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 25px;
+    right: -36px;
+    width: 36px;
+    height: 36px;
+    background-color: var(--sidebar-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s ease;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+}
+
+.sidebar-toggle-btn:hover {
+    color: var(--white);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-brand {

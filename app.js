@@ -12,7 +12,32 @@ document.addEventListener("DOMContentLoaded", () => {
     loadDataset();
     initChatbox();
     initFilters();
+    initSidebarToggle();
 });
+
+function initSidebarToggle() {
+    const sidebar = document.getElementById('appSidebar');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const toggleIcon = document.getElementById('sidebarToggleIcon');
+
+    if(toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            
+            // Ubah icon SVG
+            if(sidebar.classList.contains('collapsed')) {
+                toggleIcon.innerHTML = '<path d="M9 18l6-6-6-6" />'; // Chevron Right
+            } else {
+                toggleIcon.innerHTML = '<path d="M15 18l-6-6 6-6" />'; // Chevron Left
+            }
+
+            // Memicu event resize agar grafik D3.js menyesuaikan ukuran baru
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 400); // 400ms menunggu animasi CSS selesai
+        });
+    }
+}
 
 function initTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn');
