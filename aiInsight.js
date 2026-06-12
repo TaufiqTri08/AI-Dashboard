@@ -21,7 +21,7 @@ Konteks Anomali: ${anomalyContext ? anomalyContext.description : 'Tidak ada'}
 ATURAN GRAFIK & BATASAN:
 1. JIKA DAN HANYA JIKA pengguna SECARA EKSPLISIT menyuruhmu MEMBUAT, MENAMPILKAN, atau MENGGAMBAR "grafik"/"chart"/"visualisasi" baru (misal: "buatkan chart", "tampilkan grafik"), isi 'type' dengan 'line', 'bar', atau 'scatter'. Jika pengguna hanya BERCERITA atau MINTA PENJELASAN tentang chart (misal: "jelaskan chart ini"), WAJIB isi 'type': 'none'.
 2. JIKA pengguna meminta rekomendasi, saran bisnis, insight strategi, atau menanyakan "Mengapa" dan "Bagaimana" terkait sales/profit/diskon, BERIKAN JAWABAN ANALITIS YANG MENDALAM. 
-3. SANGAT PENTING: Jika pertanyaan pengguna TIDAK MENGANDUNG konteks analisis data, grafik, bisnis, penjualan, profit, atau anomali (misalnya: hitungan matematika acak seperti '1+5-9', 'siapa tokoh X', definisi akronim umum/acak, atau tutorial coding), JANGAN SEKALI-KALI MENJAWAB PERTANYAAN TERSEBUT. Isi "narrative" dengan HANYA kalimat ini: "Maaf, kemampuan saya dibatasi khusus untuk menganalisis data penjualan dan memberikan rekomendasi bisnis pada dashboard ini saja." dan isi "headline" dengan "Pertanyaan Di Luar Konteks".`;
+3. SANGAT PENTING: Jika pertanyaan pengguna TIDAK MENGANDUNG konteks analisis data/bisnis (misalnya: hitungan matematika '1+5-9', 'siapa tokoh X', definisi akronim aneh, atau tutorial coding), JANGAN MENJAWABNYA. NAMUN INGAT: Pertanyaan singkat seperti "Masalah region?", "Rekomendasi?", atau "Prioritas profit?" ADALAH pertanyaan bisnis yang valid terkait dashboard ini dan WAJIB kamu jawab berdasarkan data! Jika benar-benar di luar konteks, isi "narrative" dengan HANYA kalimat ini: "Maaf, kemampuan saya dibatasi khusus untuk menganalisis data penjualan dan memberikan rekomendasi bisnis pada dashboard ini saja." dan isi "headline" dengan "Pertanyaan Di Luar Konteks".`;
 
     try {
         const response = await fetch(CONFIG.API_URL, {
@@ -34,7 +34,7 @@ ATURAN GRAFIK & BATASAN:
                 model: CONFIG.MODEL_NAME,
                 messages: [
                     { role: "system", content: systemPrompt },
-                    { role: "user", content: `Pertanyaan Pengguna: "${promptText}".\n\n(Peringatan Sistem: Jika pertanyaan ini adalah hitungan matematika dasar, pertanyaan umum, atau tidak terkait analisis penjualan/bisnis/grafik sama sekali, kamu WAJIB MENOLAKNYA sesuai Aturan #3!)` }
+                    { role: "user", content: `Pertanyaan Pengguna: "${promptText}".\n\n(Peringatan Sistem: Jawablah dengan analitis! Tolak HANYA jika ini hitungan matematika dasar/pertanyaan umum acak. Pertanyaan singkat tentang region/profit/rekomendasi WAJIB dijawab!)` }
                 ],
                 temperature: 0.1,
                 response_format: { type: "json_object" }
