@@ -618,14 +618,14 @@ function drawDonutChart(selector, data, formatCurrency) {
     const height = container.clientHeight || 350;
     const margin = 20;
 
-    const radius = Math.min(width, height) / 2 - margin;
+    const radius = Math.min(width, height - 40) / 2 - margin;
 
     const svg = d3.select(selector)
       .append("svg")
         .attr("width", width)
-        .attr("height", height)
+        .attr("height", height - 40)
       .append("g")
-        .attr("transform", `translate(${width/2},${height/2})`);
+        .attr("transform", `translate(${width/2},${(height-40)/2})`);
 
     const color = d3.scaleOrdinal()
       .domain(data.map(d => d.key))
@@ -666,6 +666,35 @@ function drawDonutChart(selector, data, formatCurrency) {
           tooltip.transition().duration(500).style("opacity", 0);
       });
 
+    // Menambahkan Keterangan Warna (Legend)
+    const legendContainer = d3.select(selector)
+        .append("div")
+        .style("display", "flex")
+        .style("justify-content", "center")
+        .style("flex-wrap", "wrap")
+        .style("gap", "15px")
+        .style("width", "100%")
+        .style("margin-top", "10px");
+
+    const legends = legendContainer.selectAll(".legend-item")
+        .data(data)
+        .enter()
+        .append("div")
+        .style("display", "flex")
+        .style("align-items", "center")
+        .style("gap", "6px");
+
+    legends.append("div")
+        .style("width", "12px")
+        .style("height", "12px")
+        .style("border-radius", "50%")
+        .style("background-color", d => color(d.key));
+
+    legends.append("span")
+        .text(d => d.key)
+        .style("font-size", "12px")
+        .style("font-weight", "500")
+        .style("color", "var(--text-main)");
 }
 
 function drawHorizontalBarChart(selector, data, color, formatCurrency) {
