@@ -195,8 +195,46 @@ body {
 }
 
 /* ZONA SETUP & FILTERS */
-.setup-header-container {
-    margin-bottom: 1.5rem;
+/* AI HERO CONTAINER */
+.ai-hero-container {
+    border: 3px solid #facc15;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    background-color: #0f172a;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+.ai-hero-badge {
+    display: inline-block;
+    border: 1px solid #facc15;
+    color: #facc15;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+    border-radius: 3px;
+    background-color: rgba(250, 204, 21, 0.1);
+}
+
+.ai-hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0 0 0.75rem 0;
+    line-height: 1.3;
+}
+
+.ai-hero-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-family: monospace;
+}
+
+.model-highlight {
+    color: #facc15;
 }
 
 .filter-bar {

@@ -90,6 +90,23 @@ async function loadNarasiAi() {
     isNarasiLoaded = true;
 }
 
+async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit) {
+    try {
+        const dataSummary = `Total Sales: $${totalSales.toFixed(0)}, Total Profit: $${totalProfit.toFixed(0)}.`;
+        const prompt = "Berikan 1 headline dramatis dan singkat (maksimal 8 kata) yang merangkum performa bisnis saat ini.";
+        const aiResponse = await getAiInsight(prompt, anomalyData, dataSummary);
+        
+        const titleEl = document.getElementById('pageTitleText');
+        if (aiResponse && aiResponse.headline) {
+            titleEl.innerText = aiResponse.headline;
+        } else {
+            titleEl.innerText = generateTitle(anomalyData);
+        }
+    } catch (e) {
+        document.getElementById('pageTitleText').innerText = generateTitle(anomalyData);
+    }
+}
+
 async function loadDataset() {
     try {
         // d3.csv secara otomatis mem-parsing file CSV dengan delimiter koma
@@ -136,7 +153,8 @@ function processData(data) {
     }
 
     // Generate Cerita & Judul
-    document.getElementById('pageTitleText').innerText = generateTitle(globalAnomalyData);
+    document.getElementById('pageTitleText').innerText = "⏳ Sedang meracik wawasan AI...";
+    fetchAiHeroHeadline(globalAnomalyData, totalSales, totalProfit);
     document.getElementById('storySetupText').innerText = generateStory(totalSales, totalProfit, profitMargin, globalAnomalyData);
 
     // Update KPI UI
