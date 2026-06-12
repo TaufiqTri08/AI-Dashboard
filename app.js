@@ -102,6 +102,11 @@ async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit) {
         } else {
             titleEl.innerText = generateTitle(anomalyData);
         }
+        
+        const now = new Date();
+        const timeString = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+        const tsEl = document.getElementById('heroTimestamp');
+        if (tsEl) tsEl.innerText = ` • Diperbarui: ${timeString}`;
     } catch (e) {
         document.getElementById('pageTitleText').innerText = generateTitle(anomalyData);
     }
