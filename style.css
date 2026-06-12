@@ -138,8 +138,8 @@ body {
 .dynamic-chart-container {
     padding: 1rem;
     margin-bottom: 1rem;
-    background-color: #f8fafc;
-    border: 1px dashed #cbd5e1;
+    background-color: var(--bg-main);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
     border-radius: 8px;
 }
 
