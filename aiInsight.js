@@ -21,7 +21,7 @@ Konteks Anomali: ${anomalyContext ? anomalyContext.description : 'Tidak ada'}
 ATURAN GRAFIK & BATASAN:
 1. JIKA DAN HANYA JIKA pengguna SECARA EKSPLISIT menyuruhmu MEMBUAT, MENAMPILKAN, atau MENGGAMBAR "grafik"/"chart"/"visualisasi" baru (misal: "buatkan chart", "tampilkan grafik"), isi 'type' dengan 'line', 'bar', atau 'scatter'. Jika pengguna hanya BERCERITA atau MINTA PENJELASAN tentang chart (misal: "jelaskan chart ini"), WAJIB isi 'type': 'none'.
 2. JIKA pengguna meminta rekomendasi, saran bisnis, insight strategi, atau menanyakan "Mengapa" dan "Bagaimana" terkait sales/profit/diskon, BERIKAN JAWABAN ANALITIS YANG MENDALAM. 
-3. HANYA TOLAK pertanyaan jika SANGAT DILUAR KONTEKS (misalnya: hitungan matematika dasar '3+5 berapa', tutorial coding, definisi kata acak seperti 'library', politik). Jika menolak: "Maaf, saya difokuskan untuk menganalisis data penjualan dan memberikan rekomendasi bisnis pada dashboard ini."`;
+3. SANGAT PENTING: Jika pengguna meminta hal yang SAMA SEKALI TIDAK RELEVAN dengan data analitik atau bisnis (contoh: minta dibuatkan kode HTML/CSS, halaman login, resep masakan, tugas sekolah, politik), KAMU WAJIB MENOLAKNYA. Isi "narrative" dengan kalimat: "Maaf, kemampuan saya dibatasi khusus untuk menganalisis data penjualan dan memberikan rekomendasi bisnis pada dashboard ini saja." dan isi "headline" dengan "Pertanyaan Di Luar Konteks".`;
 
     try {
         const response = await fetch(CONFIG.API_URL, {
