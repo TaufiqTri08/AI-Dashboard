@@ -585,25 +585,62 @@ function drawLineChart(selector, data, formatCurrency) {
             .curve(d3.curveMonotoneX)
         );
 
+    // Calculate Trendline (Least Squares)
+    const n = data.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    data.forEach((d, i) => {
+        sumX += i;
+        sumY += d.value;
+        sumXY += i * d.value;
+        sumX2 += i * i;
+    });
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    const startTrendY = intercept;
+    const endTrendY = slope * (n - 1) + intercept;
+
+    svg.append("line")
+        .attr("x1", x(data[0].key))
+        .attr("y1", y(startTrendY))
+        .attr("x2", x(data[n-1].key))
+        .attr("y2", y(endTrendY))
+        .attr("stroke", "rgba(255,255,255,0.4)")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "6,4");
+
+    // Min & Max Indicators
+    const maxVal = d3.max(data, d => d.value);
+    const minVal = d3.min(data, d => d.value);
+
     svg.selectAll("myCircles")
         .data(data)
         .join("circle")
-        .attr("fill", "var(--navy-dark)")
+        .attr("fill", d => {
+            if (d.value === maxVal) return "var(--accent-green)";
+            if (d.value === minVal) return "var(--accent-red)";
+            return "var(--navy-dark)";
+        })
         .attr("stroke", "white")
         .attr("stroke-width", 2)
         .attr("cx", d => x(d.key))
         .attr("cy", d => y(d.value))
-        .attr("r", 5)
+        .attr("r", d => (d.value === maxVal || d.value === minVal) ? 7 : 5)
         .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
-            tooltip.html(d.key + "<br/>" + formatCurrency(d.value))
+            
+            let labelText = d.key + "<br/>" + formatCurrency(d.value);
+            if (d.value === maxVal) labelText += "<br/><span style='color:#10b981;font-weight:bold'>Titik Tertinggi</span>";
+            if (d.value === minVal) labelText += "<br/><span style='color:#ef4444;font-weight:bold'>Titik Terendah</span>";
+            
+            tooltip.html(labelText)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
-            d3.select(this).attr("r", 8);
+            d3.select(this).attr("r", 9);
         })
-        .on("mouseout", function () {
+        .on("mouseout", function (event, d) {
             tooltip.transition().duration(500).style("opacity", 0);
-            d3.select(this).attr("r", 5);
+            d3.select(this).attr("r", (d.value === maxVal || d.value === minVal) ? 7 : 5);
         });
 }
 
