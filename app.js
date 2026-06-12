@@ -155,7 +155,6 @@ function processData(data) {
     // Generate Cerita & Judul
     document.getElementById('pageTitleText').innerText = "⏳ Sedang meracik wawasan AI...";
     fetchAiHeroHeadline(globalAnomalyData, totalSales, totalProfit);
-    document.getElementById('storySetupText').innerText = generateStory(totalSales, totalProfit, profitMargin, globalAnomalyData);
 
     // Update KPI UI
     document.getElementById('kpiSales').innerText = formatCurrency(totalSales);
