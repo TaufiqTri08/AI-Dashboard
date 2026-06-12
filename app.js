@@ -184,6 +184,11 @@ function processData(data) {
         ([key, value]) => ({ key, value })
     ).sort((a, b) => b.value - a.value);
 
+    const salesBySegment = Array.from(
+        d3.rollup(data, v => d3.sum(v, d => d.Sales), d => d.Segment),
+        ([key, value]) => ({ key, value })
+    ).sort((a, b) => b.value - a.value);
+
     const profitBySubcat = Array.from(
         d3.rollup(data, v => d3.sum(v, d => d.Profit), d => d.SubCategory),
         ([key, value]) => ({ key, value })
@@ -216,7 +221,13 @@ function processData(data) {
 
     if (salesByCategory.length > 0) {
         const topCat = salesByCategory[0];
-        document.getElementById('desc-sales').innerHTML = `💡 Kategori <strong>${topCat.key}</strong> mendominasi pendapatan sebesar ${formatCurrency(topCat.value)}.`;
+        document.getElementById('desc-sales').innerHTML = `💡 Kategori <strong>${topCat.key}</strong> memimpin.`;
+    }
+
+    if (salesBySegment.length > 0) {
+        const topSeg = salesBySegment[0];
+        const segEl = document.getElementById('desc-segment');
+        if(segEl) segEl.innerHTML = `💡 Segmen <strong>${topSeg.key}</strong> paling besar.`;
     }
 
     if (profitBySubcat.length > 0) {
@@ -240,7 +251,8 @@ function processData(data) {
         document.getElementById('desc-scatter').innerHTML = scatterText;
     }
 
-    drawHorizontalBarChart("#chart-sales", salesByCategory, CONFIG.UI.NEUTRAL_COLOR, formatCurrency);
+    drawDonutChart("#chart-sales", salesByCategory, formatCurrency);
+    drawDonutChart("#chart-segment", salesBySegment, formatCurrency);
     drawVerticalBarChart("#chart-profit", profitBySubcat.slice(0, 15), formatCurrency); // top 15
     drawScatterPlot("#chart-scatter", scatterData, formatCurrency);
 
@@ -596,6 +608,84 @@ function drawLineChart(selector, data, formatCurrency) {
 }
 
 const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+function drawDonutChart(selector, data, formatCurrency) {
+    document.querySelector(selector).innerHTML = "";
+    if (!data || data.length === 0) return;
+
+    const container = document.querySelector(selector);
+    const width = container.clientWidth;
+    const height = container.clientHeight || 350;
+    const margin = 20;
+
+    const radius = Math.min(width, height) / 2 - margin;
+
+    const svg = d3.select(selector)
+      .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+      .append("g")
+        .attr("transform", `translate(${width/2},${height/2})`);
+
+    const color = d3.scaleOrdinal()
+      .domain(data.map(d => d.key))
+      .range(["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#0ea5e9"]);
+
+    const pie = d3.pie()
+      .value(d => d.value)
+      .sort(null);
+
+    const data_ready = pie(data);
+
+    const arc = d3.arc()
+      .innerRadius(radius * 0.5)         // This is the size of the donut hole
+      .outerRadius(radius * 0.8);
+
+    const arcHover = d3.arc()
+      .innerRadius(radius * 0.5)
+      .outerRadius(radius * 0.9);
+
+    const tooltip = d3.select("body").select(".chart-tooltip");
+    const ttip = tooltip.empty() ? d3.select("body").append("div").attr("class", "chart-tooltip").style("opacity", 0) : tooltip;
+
+    svg
+      .selectAll('allSlices')
+      .data(data_ready)
+      .join('path')
+      .attr('d', arc)
+      .attr('fill', d => color(d.data.key))
+      .attr("stroke", "var(--bg-main)")
+      .style("stroke-width", "2px")
+      .style("opacity", 0.8)
+      .on("mouseover", function(event, d) {
+          d3.select(this).transition().duration(200).attr("d", arcHover).style("opacity", 1);
+          ttip.transition().duration(200).style("opacity", .9);
+          ttip.html(`${d.data.key}<br/>${formatCurrency(d.data.value)}`)
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", function(event, d) {
+          d3.select(this).transition().duration(500).attr("d", arc).style("opacity", 0.8);
+          ttip.transition().duration(500).style("opacity", 0);
+      });
+
+    // Add labels
+    svg
+      .selectAll('allLabels')
+      .data(data_ready)
+      .join('text')
+      .text(d => d.data.key)
+      .attr("transform", function(d) {
+          const pos = arc.centroid(d);
+          return `translate(${pos[0]},${pos[1]})`;
+      })
+      .style("text-anchor", "middle")
+      .style("font-size", "11px")
+      .style("font-weight", "600")
+      .style("fill", "#ffffff")
+      .style("text-shadow", "0px 1px 2px rgba(0,0,0,0.8)")
+      .style("pointer-events", "none");
+}
 
 function drawHorizontalBarChart(selector, data, color, formatCurrency) {
     document.querySelector(selector).innerHTML = "";
