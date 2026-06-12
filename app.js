@@ -669,22 +669,6 @@ function drawDonutChart(selector, data, formatCurrency) {
           ttip.transition().duration(500).style("opacity", 0);
       });
 
-    // Add labels
-    svg
-      .selectAll('allLabels')
-      .data(data_ready)
-      .join('text')
-      .text(d => d.data.key)
-      .attr("transform", function(d) {
-          const pos = arc.centroid(d);
-          return `translate(${pos[0]},${pos[1]})`;
-      })
-      .style("text-anchor", "middle")
-      .style("font-size", "11px")
-      .style("font-weight", "600")
-      .style("fill", "#ffffff")
-      .style("text-shadow", "0px 1px 2px rgba(0,0,0,0.8)")
-      .style("pointer-events", "none");
 }
 
 function drawHorizontalBarChart(selector, data, color, formatCurrency) {
