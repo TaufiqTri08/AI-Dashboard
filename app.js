@@ -22,7 +22,7 @@ function initTabs() {
         btn.addEventListener('click', () => {
             tabBtns.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-            
+
             btn.classList.add('active');
             const targetId = btn.getAttribute('data-target');
             document.getElementById(targetId).classList.add('active');
@@ -38,11 +38,11 @@ function initAnomalyTabs() {
     const switchTab = (targetId) => {
         tabs.forEach(t => t.classList.remove('active'));
         panes.forEach(p => p.style.display = 'none');
-        
+
         const activeTab = document.querySelector(`#anomalyTabs .alert-tab[data-tab="${targetId}"]`);
-        if(activeTab) activeTab.classList.add('active');
+        if (activeTab) activeTab.classList.add('active');
         const activePane = document.getElementById(targetId);
-        if(activePane) activePane.style.display = 'block';
+        if (activePane) activePane.style.display = 'block';
 
         if (targetId === 'tab-narasi') {
             loadNarasiAi();
@@ -61,12 +61,12 @@ function initAnomalyTabs() {
 let isNarasiLoaded = false;
 async function loadNarasiAi() {
     if (isNarasiLoaded) return;
-    
+
     const narasiContainer = document.getElementById('narasiContent');
-    if(!narasiContainer) return;
-    
+    if (!narasiContainer) return;
+
     narasiContainer.innerHTML = '<p style="color:var(--text-muted);"><em>🤖 AI sedang merangkum narasi anomali...</em></p>';
-    
+
     let dataSummary = "Dataset belum dimuat.";
     if (window.globalRawData && window.globalRawData.length > 0) {
         const data = window.globalRawData;
@@ -76,35 +76,42 @@ async function loadNarasiAi() {
     }
 
     const aiResponse = await getAiInsight("Tolong berikan narasi lengkap tentang anomali yang terjadi pada data ini. Jangan berikan teks lain selain jawaban. Format ke dalam paragraf yang mudah dibaca.", globalAnomalyData, dataSummary);
-    
+
     let aiText = typeof aiResponse === 'string' ? aiResponse : aiResponse.narrative;
-    
+
     if (aiResponse && aiResponse.headline) {
         const titleEl = document.getElementById('storyConflictTitle');
         if (titleEl) titleEl.innerHTML = `<span style="color: #ea580c;">🤖 AI Insight:</span> ${aiResponse.headline}`;
     }
 
-    if(aiText) {
+    if (aiText) {
         narasiContainer.innerHTML = `<p style="color:var(--text-color); line-height:1.6; font-size:15px;">${aiText}</p>`;
     }
     isNarasiLoaded = true;
 }
 
-async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit) {
+async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit, filteredData) {
     try {
-        const dataSummary = `Total Sales: $${totalSales.toFixed(0)}, Total Profit: $${totalProfit.toFixed(0)}.`;
-        const prompt = "Buatkan 1 headline spesifik (sekitar 8-15 kata) yang merangkum anomali terbesar saat ini. Wajib cantumkan angka persentase, nominal dolar, atau nama produk/kategori spesifik agar terlihat sangat detail.";
+        let yearContext = "";
+        if (filteredData && filteredData.length > 0) {
+            const years = Array.from(new Set(filteredData.map(d => new Date(d.OrderDate).getFullYear()))).filter(y => !isNaN(y)).sort();
+            if (years.length === 1) yearContext = ` Tahun Data: ${years[0]}.`;
+            else if (years.length > 1) yearContext = ` Tahun Data: ${years[0]} - ${years[years.length-1]}.`;
+        }
+
+        const dataSummary = `Total Sales: $${totalSales.toFixed(0)}, Total Profit: $${totalProfit.toFixed(0)}.${yearContext}`;
+        const prompt = "Buatkan 1 headline spesifik (sekitar 8-15 kata) yang merangkum anomali terbesar saat ini. Wajib cantumkan angka persentase, nominal dolar, atau nama produk/kategori. PENTING: DILARANG mengarang/berhalusinasi tentang tahun! HANYA gunakan tahun yang ada di 'Tahun Data' pada ringkasan, atau jangan sebutkan tahun sama sekali.";
         const aiResponse = await getAiInsight(prompt, anomalyData, dataSummary);
-        
+
         const titleEl = document.getElementById('pageTitleText');
         if (aiResponse && aiResponse.headline) {
             titleEl.innerText = aiResponse.headline;
         } else {
             titleEl.innerText = generateTitle(anomalyData);
         }
-        
+
         const now = new Date();
-        const timeString = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+        const timeString = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const tsEl = document.getElementById('heroTimestamp');
         if (tsEl) tsEl.innerText = ` • Diperbarui: ${timeString}`;
     } catch (e) {
@@ -116,7 +123,7 @@ async function loadDataset() {
     try {
         // d3.csv secara otomatis mem-parsing file CSV dengan delimiter koma
         const data = await d3.csv(CONFIG.DATA_PATH);
-        
+
         // Parsing angka
         data.forEach(d => {
             d.Sales = +d.Sales || 0;
@@ -126,7 +133,7 @@ async function loadDataset() {
 
         // Menyimpan data global agar bisa diagregasi ulang oleh AI
         window.globalRawData = data;
-        
+
         populateFilters(data);
         applyFilters();
 
@@ -159,16 +166,16 @@ function processData(data) {
 
     // Generate Cerita & Judul
     document.getElementById('pageTitleText').innerText = "⏳ Sedang meracik wawasan AI...";
-    fetchAiHeroHeadline(globalAnomalyData, totalSales, totalProfit);
+    fetchAiHeroHeadline(globalAnomalyData, totalSales, totalProfit, data);
 
     // Update KPI UI
     document.getElementById('kpiSales').innerText = formatCurrency(totalSales);
     document.getElementById('kpiProfit').innerText = formatCurrency(totalProfit);
-    
+
     const marginEl = document.getElementById('kpiMargin');
     marginEl.innerText = (profitMargin * 100).toFixed(2) + "%";
     marginEl.className = `kpi-value ${profitMargin >= 0 ? 'positive' : 'negative'}`;
-    
+
     document.getElementById('kpiOrders').innerText = d3.format(",")(totalOrders);
     const kpiQtyEl = document.getElementById('kpiQty');
     if (kpiQtyEl) kpiQtyEl.innerText = d3.format(",")(totalQty);
@@ -182,22 +189,22 @@ function processData(data) {
         document.getElementById('storyConflictTitle').innerText = `Anomali Terdeteksi: ${globalAnomalyData.type}`;
         const storyConflictText = document.getElementById('storyConflictText');
         if (storyConflictText) storyConflictText.innerText = globalAnomalyData.description;
-        
-        if(badgeCritical) badgeCritical.style.display = 'inline-block';
-        if(badgeWarning) badgeWarning.style.display = 'inline-block';
+
+        if (badgeCritical) badgeCritical.style.display = 'inline-block';
+        if (badgeWarning) badgeWarning.style.display = 'inline-block';
     } else {
         document.getElementById('storyConflictTitle').innerText = "Status: Normal";
         const storyConflictText = document.getElementById('storyConflictText');
         if (storyConflictText) storyConflictText.innerText = "Tidak ditemukan anomali signifikan pada struktur biaya dan keuntungan.";
-        
-        if(alertWrapper) {
+
+        if (alertWrapper) {
             alertWrapper.style.border = "1px solid var(--accent-green)";
             alertWrapper.style.backgroundColor = "#f0fdf4";
         }
         const alertSpan = document.querySelector('.alert-panel-left span');
-        if(alertSpan) alertSpan.innerText = "✅";
-        if(badgeCritical) badgeCritical.style.display = 'none';
-        if(badgeWarning) badgeWarning.style.display = 'none';
+        if (alertSpan) alertSpan.innerText = "✅";
+        if (badgeCritical) badgeCritical.style.display = 'none';
+        if (badgeWarning) badgeWarning.style.display = 'none';
     }
 
     // Siapkan Data untuk Grafik
@@ -212,8 +219,8 @@ function processData(data) {
     ).sort((a, b) => b.value - a.value);
 
     const scatterData = Array.from(
-        d3.rollup(data, 
-            v => ({ sales: d3.sum(v, d => d.Sales), profit: d3.sum(v, d => d.Profit) }), 
+        d3.rollup(data,
+            v => ({ sales: d3.sum(v, d => d.Sales), profit: d3.sum(v, d => d.Profit) }),
             d => d.City || 'Unknown City'
         ),
         ([key, value]) => ({ key, sales: value.sales, profit: value.profit })
@@ -223,7 +230,7 @@ function processData(data) {
     const trendData = Array.from(
         d3.rollup(data, v => d3.sum(v, d => d.Sales), d => formatMonthTrend(new Date(d.OrderDate))),
         ([key, value]) => ({ key, value })
-    ).sort((a,b) => a.key.localeCompare(b.key));
+    ).sort((a, b) => a.key.localeCompare(b.key));
 
     // Isi Summary Table
     populateSummaryTable(data, salesByCategory, formatCurrency);
@@ -273,11 +280,11 @@ function processData(data) {
             listContainer.innerHTML = '';
             globalAnomalyData.anomaliesList.forEach(ano => {
                 const li = document.createElement('li');
-                
+
                 // Add red dot indicator for critical, orange for warning (based on title)
                 const isCritical = ano.title.includes("Turun Drastis") || ano.title.includes("di bawah rata-rata");
                 const dotColor = isCritical ? "var(--accent-red)" : "#f97316";
-                
+
                 li.innerHTML = `
                     <div style="display:flex; gap:10px; align-items:flex-start;">
                         <span style="color:${dotColor}; font-size:1.2rem; line-height:1;">&bull;</span>
@@ -289,18 +296,18 @@ function processData(data) {
                 `;
                 listContainer.appendChild(li);
             });
-            
+
             // Update badge counts
             const criticalCount = globalAnomalyData.anomaliesList.filter(a => a.title.includes("Turun Drastis") || a.title.includes("di bawah rata-rata")).length;
             const warningCount = globalAnomalyData.anomaliesList.length - criticalCount;
-            
+
             const badgeCritical = document.getElementById('badgeCritical');
             const badgeWarning = document.getElementById('badgeWarning');
-            if(badgeCritical) {
+            if (badgeCritical) {
                 badgeCritical.innerText = `${criticalCount} Kritis`;
                 badgeCritical.style.display = criticalCount > 0 ? 'inline-block' : 'none';
             }
-            if(badgeWarning) {
+            if (badgeWarning) {
                 badgeWarning.innerText = `${warningCount} Peringatan`;
                 badgeWarning.style.display = warningCount > 0 ? 'inline-block' : 'none';
             }
@@ -317,7 +324,7 @@ function populateSummaryTable(data, salesByCategory, formatCurrency) {
         d3.rollup(data, v => d3.sum(v, d => d.Profit), d => d.Category),
         ([key, value]) => ({ key, value })
     );
-    
+
     salesByCategory.forEach(s => {
         const p = profitByCategory.find(p => p.key === s.key);
         const tr = document.createElement("tr");
@@ -335,7 +342,7 @@ function initFilters() {
     document.getElementById('filterYear').addEventListener('change', applyFilters);
     document.getElementById('filterCategory').addEventListener('change', applyFilters);
     document.getElementById('filterRegion').addEventListener('change', applyFilters);
-    
+
     document.getElementById('btnResetFilter').addEventListener('click', () => {
         document.getElementById('filterYear').value = 'all';
         document.getElementById('filterCategory').value = 'all';
@@ -348,7 +355,7 @@ function populateFilters(data) {
     const years = new Set();
     const categories = new Set();
     const regions = new Set();
-    
+
     data.forEach(d => {
         if (d.OrderDate) {
             const year = new Date(d.OrderDate).getFullYear();
@@ -357,7 +364,7 @@ function populateFilters(data) {
         if (d.Category) categories.add(d.Category);
         if (d.CountryRegion) regions.add(d.CountryRegion);
     });
-    
+
     const yearSelect = document.getElementById('filterYear');
     Array.from(years).sort().forEach(y => {
         const opt = document.createElement('option');
@@ -365,7 +372,7 @@ function populateFilters(data) {
         opt.innerText = y;
         yearSelect.appendChild(opt);
     });
-    
+
     const catSelect = document.getElementById('filterCategory');
     Array.from(categories).sort().forEach(c => {
         const opt = document.createElement('option');
@@ -373,7 +380,7 @@ function populateFilters(data) {
         opt.innerText = c;
         catSelect.appendChild(opt);
     });
-    
+
     const regSelect = document.getElementById('filterRegion');
     Array.from(regions).sort().forEach(r => {
         const opt = document.createElement('option');
@@ -385,13 +392,13 @@ function populateFilters(data) {
 
 function applyFilters() {
     if (!window.globalRawData) return;
-    
+
     const yearVal = document.getElementById('filterYear').value;
     const catVal = document.getElementById('filterCategory').value;
     const regVal = document.getElementById('filterRegion').value;
-    
+
     let filtered = window.globalRawData;
-    
+
     if (yearVal !== 'all') {
         filtered = filtered.filter(d => new Date(d.OrderDate).getFullYear().toString() === yearVal);
     }
@@ -401,7 +408,7 @@ function applyFilters() {
     if (regVal !== 'all') {
         filtered = filtered.filter(d => d.CountryRegion === regVal);
     }
-    
+
     processData(filtered);
 }
 
@@ -436,7 +443,7 @@ function initChatbox() {
             const tSales = d3.sum(data, d => d.Sales);
             const tProfit = d3.sum(data, d => d.Profit);
             const tQty = d3.sum(data, d => d.Qty);
-            const topCat = Array.from(d3.rollup(data, v => d3.sum(v, d=>d.Sales), d=>d.Category)).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'Tidak diketahui';
+            const topCat = Array.from(d3.rollup(data, v => d3.sum(v, d => d.Sales), d => d.Category)).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Tidak diketahui';
             dataSummary = `Data terfilter. Total Sales: $${tSales.toFixed(0)}, Total Profit: $${tProfit.toFixed(0)}, Qty: ${tQty}. Kategori Dominan: ${topCat}.`;
         }
 
@@ -445,10 +452,10 @@ function initChatbox() {
 
         // Hapus loading, tampilkan response
         document.getElementById(loadingId).remove();
-        
+
         let aiText = typeof aiResponse === 'string' ? aiResponse : aiResponse.narrative;
         if (!aiText) aiText = "Terjadi kesalahan saat memproses respons AI.";
-        
+
         chatbox.innerHTML += `<p style="margin-top:10px; color: var(--navy-dark);"><strong>AI:</strong> ${aiText}</p>`;
         chatbox.scrollTop = chatbox.scrollHeight;
 
@@ -480,17 +487,17 @@ function initChatbox() {
 
 function executeChartCommand(command) {
     if (!window.globalRawData) return;
-    
+
     const container = document.getElementById('dynamic-chart-container');
     const titleEl = document.getElementById('dynamic-chart-title');
     container.style.display = 'block';
     titleEl.innerText = command.title || "Visualisasi Dinamis";
-    
+
     document.getElementById('dynamic-chart-area').innerHTML = ''; // bersihkan chart lama
-    
+
     let groupedData = [];
     const data = window.globalRawData;
-    
+
     const formatMonth = d3.timeFormat("%Y-%m");
     const formatQuarter = d => {
         const date = new Date(d);
@@ -498,17 +505,17 @@ function executeChartCommand(command) {
         return `${date.getFullYear()}-Q${q}`;
     };
     const formatYear = d3.timeFormat("%Y");
-    
+
     const yMetric = command.y_axis === 'profit' ? d => d.Profit : d => d.Sales;
-    
+
     // Khusus untuk scatter plot
     if (command.type === 'scatter') {
         const xMetric = command.x_axis === 'discount' ? d => d.Discount : (command.x_axis === 'profit' ? d => d.Profit : d => d.Sales);
         const yMetricSc = command.y_axis === 'profit' ? d => d.Profit : (command.y_axis === 'discount' ? d => d.Discount : d => d.Sales);
-        
+
         const scatterData = Array.from(
-            d3.rollup(data, 
-                v => ({ x: d3.sum(v, xMetric), y: d3.sum(v, yMetricSc) }), 
+            d3.rollup(data,
+                v => ({ x: d3.sum(v, xMetric), y: d3.sum(v, yMetricSc) }),
                 d => d.City || 'Unknown City'
             ),
             ([key, value]) => ({ key, x: value.x, y: value.y })
@@ -520,30 +527,30 @@ function executeChartCommand(command) {
 
     // Grouping untuk Line/Bar
     if (command.x_axis === 'month') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatMonth(new Date(d.OrderDate))), ([key, value]) => ({key, value})).sort((a,b) => a.key.localeCompare(b.key));
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatMonth(new Date(d.OrderDate))), ([key, value]) => ({ key, value })).sort((a, b) => a.key.localeCompare(b.key));
     } else if (command.x_axis === 'quarter') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatQuarter(d.OrderDate)), ([key, value]) => ({key, value})).sort((a,b) => a.key.localeCompare(b.key));
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatQuarter(d.OrderDate)), ([key, value]) => ({ key, value })).sort((a, b) => a.key.localeCompare(b.key));
     } else if (command.x_axis === 'year') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatYear(new Date(d.OrderDate))), ([key, value]) => ({key, value})).sort((a,b) => a.key.localeCompare(b.key));
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => formatYear(new Date(d.OrderDate))), ([key, value]) => ({ key, value })).sort((a, b) => a.key.localeCompare(b.key));
     } else if (command.x_axis === 'category') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.Category), ([key, value]) => ({key, value})).sort((a,b) => b.value - a.value);
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.Category), ([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value);
     } else if (command.x_axis === 'subcategory') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.SubCategory), ([key, value]) => ({key, value})).sort((a,b) => b.value - a.value).slice(0, 10);
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.SubCategory), ([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value).slice(0, 10);
     } else if (command.x_axis === 'region' || command.x_axis === 'country') {
-        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.CountryRegion), ([key, value]) => ({key, value})).sort((a,b) => b.value - a.value).slice(0, 10);
+        groupedData = Array.from(d3.rollup(data, v => d3.sum(v, yMetric), d => d.CountryRegion), ([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value).slice(0, 10);
     } else {
         titleEl.innerText += ` (Error: x_axis '${command.x_axis}' tidak didukung)`;
         return;
     }
-    
+
     const formatCurrency = d3.format("$,.0f");
-    
+
     if (command.type === 'line' || command.x_axis === 'month' || command.x_axis === 'quarter' || command.x_axis === 'year') {
         drawLineChart("#dynamic-chart-area", groupedData, formatCurrency);
     } else {
         drawVerticalBarChart("#dynamic-chart-area", groupedData, formatCurrency);
     }
-    
+
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -553,65 +560,65 @@ function drawLineChart(selector, data, formatCurrency) {
     // Line chart implementation
     const width = container.clientWidth;
     const height = 300;
-    const margin = {top: 20, right: 30, bottom: 50, left: 60};
+    const margin = { top: 20, right: 30, bottom: 50, left: 60 };
 
     const svg = d3.select(selector)
-      .append("svg")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-      .append("g")
+        .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scalePoint()
-      .domain(data.map(d => d.key))
-      .range([ 0, width - margin.left - margin.right ])
-      .padding(0.5);
-      
+        .domain(data.map(d => d.key))
+        .range([0, width - margin.left - margin.right])
+        .padding(0.5);
+
     svg.append("g")
-      .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
-      .call(d3.axisBottom(x))
-      .selectAll("text")
+        .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
         .attr("transform", "translate(-10,0)rotate(-45)")
         .style("text-anchor", "end")
         .style("font-family", "Inter");
 
     const yMin = Math.min(0, d3.min(data, d => d.value));
     const y = d3.scaleLinear()
-      .domain([yMin, d3.max(data, d => d.value) * 1.1])
-      .range([ height - margin.top - margin.bottom, 0]);
-      
+        .domain([yMin, d3.max(data, d => d.value) * 1.1])
+        .range([height - margin.top - margin.bottom, 0]);
+
     svg.append("g")
-      .call(d3.axisLeft(y).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .call(d3.axisLeft(y).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     svg.append("path")
-      .datum(data)
-      .attr("fill", "none")
-      .attr("stroke", "var(--accent-blue)")
-      .attr("stroke-width", 3)
-      .attr("d", d3.line()
-        .x(d => x(d.key))
-        .y(d => y(d.value))
-        .curve(d3.curveMonotoneX)
-      );
-      
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "var(--accent-blue)")
+        .attr("stroke-width", 3)
+        .attr("d", d3.line()
+            .x(d => x(d.key))
+            .y(d => y(d.value))
+            .curve(d3.curveMonotoneX)
+        );
+
     svg.selectAll("myCircles")
-      .data(data)
-      .join("circle")
+        .data(data)
+        .join("circle")
         .attr("fill", "var(--navy-dark)")
         .attr("stroke", "white")
         .attr("stroke-width", 2)
-        .attr("cx", d => x(d.key) )
-        .attr("cy", d => y(d.value) )
+        .attr("cx", d => x(d.key))
+        .attr("cy", d => y(d.value))
         .attr("r", 5)
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
             tooltip.html(d.key + "<br/>" + formatCurrency(d.value))
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
             d3.select(this).attr("r", 8);
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.transition().duration(500).style("opacity", 0);
             d3.select(this).attr("r", 5);
         });
@@ -624,29 +631,29 @@ function drawHorizontalBarChart(selector, data, color, formatCurrency) {
     const container = document.querySelector(selector);
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 20, right: 30, bottom: 40, left: 90};
+    const margin = { top: 20, right: 30, bottom: 40, left: 90 };
 
     const svg = d3.select(selector)
-      .append("svg")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-      .append("g")
+        .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleLinear()
         .domain([0, d3.max(data, d => d.value)])
-        .range([ 0, width - margin.left - margin.right]);
-    
+        .range([0, width - margin.left - margin.right]);
+
     svg.append("g")
         .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
         .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2s")))
         .selectAll("text").style("font-family", "Inter").style("color", "var(--text-muted)");
 
     const y = d3.scaleBand()
-        .range([ 0, height - margin.top - margin.bottom ])
+        .range([0, height - margin.top - margin.bottom])
         .domain(data.map(d => d.key))
         .padding(.2);
-    
+
     svg.append("g")
         .call(d3.axisLeft(y))
         .selectAll("text").style("font-family", "Inter").style("font-size", "12px").style("color", "var(--navy-dark)");
@@ -654,20 +661,20 @@ function drawHorizontalBarChart(selector, data, color, formatCurrency) {
     svg.selectAll("myRect")
         .data(data)
         .join("rect")
-        .attr("x", x(0) )
-        .attr("y", d => y(d.key) )
+        .attr("x", x(0))
+        .attr("y", d => y(d.key))
         .attr("width", d => x(d.value))
-        .attr("height", y.bandwidth() )
+        .attr("height", y.bandwidth())
         .attr("fill", color)
         .attr("rx", 4)
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
             tooltip.html(d.key + "<br/>" + formatCurrency(d.value))
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
             d3.select(this).style("opacity", 0.8);
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.transition().duration(500).style("opacity", 0);
             d3.select(this).style("opacity", 1);
         });
@@ -678,35 +685,35 @@ function drawVerticalBarChart(selector, data, formatCurrency) {
     const container = document.querySelector(selector);
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const margin = {top: 20, right: 20, bottom: 80, left: 60};
+    const margin = { top: 20, right: 20, bottom: 80, left: 60 };
 
     const svg = d3.select(selector)
-      .append("svg")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-      .append("g")
+        .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleBand()
-      .range([ 0, width - margin.left - margin.right ])
-      .domain(data.map(d => d.key))
-      .padding(0.2);
-      
+        .range([0, width - margin.left - margin.right])
+        .domain(data.map(d => d.key))
+        .padding(0.2);
+
     svg.append("g")
-      .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
-      .call(d3.axisBottom(x))
-      .selectAll("text")
+        .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
         .attr("transform", "translate(-10,0)rotate(-45)")
         .style("text-anchor", "end")
         .style("font-family", "Inter");
 
     const y = d3.scaleLinear()
-      .domain([d3.min(data, d => d.value) < 0 ? d3.min(data, d => d.value) * 1.1 : 0, d3.max(data, d => d.value)])
-      .range([ height - margin.top - margin.bottom, 0]);
-      
+        .domain([d3.min(data, d => d.value) < 0 ? d3.min(data, d => d.value) * 1.1 : 0, d3.max(data, d => d.value)])
+        .range([height - margin.top - margin.bottom, 0]);
+
     svg.append("g")
-      .call(d3.axisLeft(y).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .call(d3.axisLeft(y).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     if (d3.min(data, d => d.value) < 0) {
         svg.append("line")
@@ -720,22 +727,22 @@ function drawVerticalBarChart(selector, data, formatCurrency) {
     }
 
     svg.selectAll("mybar")
-      .data(data)
-      .join("rect")
+        .data(data)
+        .join("rect")
         .attr("x", d => x(d.key))
         .attr("y", d => y(Math.max(0, d.value)))
         .attr("width", x.bandwidth())
         .attr("height", d => Math.abs(y(d.value) - y(0)))
         .attr("fill", d => d.value < 0 ? CONFIG.UI.NEGATIVE_COLOR : CONFIG.UI.NEUTRAL_COLOR)
         .attr("rx", 4)
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
             tooltip.html(d.key + "<br/>" + formatCurrency(d.value))
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
             d3.select(this).style("opacity", 0.8);
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.transition().duration(500).style("opacity", 0);
             d3.select(this).style("opacity", 1);
         });
@@ -746,33 +753,33 @@ function drawScatterPlot(selector, data, formatCurrency) {
     const container = document.querySelector(selector);
     const width = container.clientWidth;
     const height = container.clientHeight || 400;
-    const margin = {top: 20, right: 30, bottom: 50, left: 70};
+    const margin = { top: 20, right: 30, bottom: 50, left: 70 };
 
     const svg = d3.select(selector)
-      .append("svg")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-      .append("g")
+        .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.sales) * 1.1])
-      .range([ 0, width - margin.left - margin.right ]);
-      
+        .domain([0, d3.max(data, d => d.sales) * 1.1])
+        .range([0, width - margin.left - margin.right]);
+
     svg.append("g")
-      .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
-      .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     const yMin = Math.min(0, d3.min(data, d => d.profit));
     const yMax = d3.max(data, d => d.profit);
     const y = d3.scaleLinear()
-      .domain([yMin * 1.1, yMax * 1.1])
-      .range([ height - margin.top - margin.bottom, 0]);
-      
+        .domain([yMin * 1.1, yMax * 1.1])
+        .range([height - margin.top - margin.bottom, 0]);
+
     svg.append("g")
-      .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     // Add zero line for profit
     if (yMin < 0) {
@@ -808,23 +815,23 @@ function drawScatterPlot(selector, data, formatCurrency) {
         .text("Total Profit ($)");
 
     svg.append('g')
-      .selectAll("dot")
-      .data(data)
-      .join("circle")
-        .attr("cx", d => x(d.sales) )
-        .attr("cy", d => y(d.profit) )
+        .selectAll("dot")
+        .data(data)
+        .join("circle")
+        .attr("cx", d => x(d.sales))
+        .attr("cy", d => y(d.profit))
         .attr("r", 7)
         .style("fill", d => d.profit < 0 ? "var(--accent-red)" : "var(--accent-blue)")
         .style("opacity", 0.7)
         .style("stroke", "white")
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
             tooltip.html(`<strong>${d.key}</strong><br/>Sales: ${formatCurrency(d.sales)}<br/>Profit: ${formatCurrency(d.profit)}`)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
             d3.select(this).style("opacity", 1).attr("r", 9);
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.transition().duration(500).style("opacity", 0);
             d3.select(this).style("opacity", 0.7).attr("r", 7);
         });
@@ -835,33 +842,33 @@ function drawDynamicScatterPlot(selector, data, xLabel, yLabel, formatCurrency) 
     const container = document.querySelector(selector);
     const width = container.clientWidth;
     const height = container.clientHeight || 400;
-    const margin = {top: 20, right: 30, bottom: 50, left: 70};
+    const margin = { top: 20, right: 30, bottom: 50, left: 70 };
 
     const svg = d3.select(selector)
-      .append("svg")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-      .append("g")
+        .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.x) * 1.1])
-      .range([ 0, width - margin.left - margin.right ]);
-      
+        .domain([0, d3.max(data, d => d.x) * 1.1])
+        .range([0, width - margin.left - margin.right]);
+
     svg.append("g")
-      .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
-      .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     const yMin = Math.min(0, d3.min(data, d => d.y));
     const yMax = d3.max(data, d => d.y);
     const y = d3.scaleLinear()
-      .domain([yMin * 1.1, yMax * 1.1])
-      .range([ height - margin.top - margin.bottom, 0]);
-      
+        .domain([yMin * 1.1, yMax * 1.1])
+        .range([height - margin.top - margin.bottom, 0]);
+
     svg.append("g")
-      .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format(".2s")))
-      .selectAll("text").style("font-family", "Inter");
+        .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format(".2s")))
+        .selectAll("text").style("font-family", "Inter");
 
     // Zero line
     if (yMin < 0) {
@@ -892,15 +899,15 @@ function drawDynamicScatterPlot(selector, data, xLabel, yLabel, formatCurrency) 
         .text(yLabel.toUpperCase());
 
     svg.append('g')
-      .selectAll("dot")
-      .data(data)
-      .join("circle")
-        .attr("cx", d => x(d.x) )
-        .attr("cy", d => y(d.y) )
+        .selectAll("dot")
+        .data(data)
+        .join("circle")
+        .attr("cx", d => x(d.x))
+        .attr("cy", d => y(d.y))
         .attr("r", 7)
         .style("fill", d => d.y < 0 ? "var(--accent-red)" : "var(--accent-blue)")
         .style("opacity", 0.7)
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", .9);
             const valX = xLabel === 'discount' ? d.x.toFixed(2) : formatCurrency(d.x);
             const valY = yLabel === 'discount' ? d.y.toFixed(2) : formatCurrency(d.y);
@@ -909,7 +916,7 @@ function drawDynamicScatterPlot(selector, data, xLabel, yLabel, formatCurrency) 
                 .style("top", (event.pageY - 28) + "px");
             d3.select(this).style("opacity", 1).attr("r", 9);
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.transition().duration(500).style("opacity", 0);
             d3.select(this).style("opacity", 0.7).attr("r", 7);
         });
