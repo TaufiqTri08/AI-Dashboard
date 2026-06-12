@@ -78,9 +78,15 @@ async function loadNarasiAi() {
     const aiResponse = await getAiInsight("Tolong berikan narasi lengkap tentang anomali yang terjadi pada data ini. Jangan berikan teks lain selain jawaban. Format ke dalam paragraf yang mudah dibaca.", globalAnomalyData, dataSummary);
     
     let aiText = typeof aiResponse === 'string' ? aiResponse : aiResponse.narrative;
-    if (!aiText) aiText = "Terjadi kesalahan atau anomali tidak ditemukan.";
+    
+    if (aiResponse && aiResponse.headline) {
+        const titleEl = document.getElementById('storyConflictTitle');
+        if (titleEl) titleEl.innerHTML = `<span style="color: #ea580c;">🤖 AI Insight:</span> ${aiResponse.headline}`;
+    }
 
-    narasiContainer.innerHTML = `<div style="color: var(--navy-dark); font-size: 0.95rem; line-height: 1.6;">${aiText}</div>`;
+    if(aiText) {
+        narasiContainer.innerHTML = `<p style="color:var(--text-color); line-height:1.6; font-size:15px;">${aiText}</p>`;
+    }
     isNarasiLoaded = true;
 }
 
