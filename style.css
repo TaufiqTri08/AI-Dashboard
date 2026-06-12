@@ -667,3 +667,13 @@ body {
     .charts-grid { grid-template-columns: 1fr; }
     .resolution-grid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 768px) {
+    .header { flex-direction: column; text-align: center; gap: 1rem; }
+    .filter-bar { flex-direction: column; align-items: stretch; gap: 1rem; }
+    #btnResetFilter { margin-left: 0 !important; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .alert-panel { flex-direction: column; gap: 1rem; text-align: center; }
+    .ai-input-area { flex-direction: column; }
+    #btnAskAi { width: 100%; }
+}
