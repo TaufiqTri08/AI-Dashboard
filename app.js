@@ -90,35 +90,6 @@ async function loadNarasiAi() {
     isNarasiLoaded = true;
 }
 
-async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit, filteredData) {
-    try {
-        let yearContext = "";
-        if (filteredData && filteredData.length > 0) {
-            const years = Array.from(new Set(filteredData.map(d => new Date(d.OrderDate).getFullYear()))).filter(y => !isNaN(y)).sort();
-            if (years.length === 1) yearContext = ` Tahun Data: ${years[0]}.`;
-            else if (years.length > 1) yearContext = ` Tahun Data: ${years[0]} - ${years[years.length-1]}.`;
-        }
-
-        const dataSummary = `Total Sales: $${totalSales.toFixed(0)}, Total Profit: $${totalProfit.toFixed(0)}.${yearContext}`;
-        const prompt = "Buatkan 1 headline spesifik (sekitar 8-15 kata) yang merangkum anomali terbesar saat ini. Wajib cantumkan angka persentase, nominal dolar, atau nama produk/kategori. PENTING: DILARANG mengarang/berhalusinasi tentang tahun! HANYA gunakan tahun yang ada di 'Tahun Data' pada ringkasan, atau jangan sebutkan tahun sama sekali.";
-        const aiResponse = await getAiInsight(prompt, anomalyData, dataSummary);
-
-        const titleEl = document.getElementById('pageTitleText');
-        if (aiResponse && aiResponse.headline) {
-            titleEl.innerText = aiResponse.headline;
-        } else {
-            titleEl.innerText = generateTitle(anomalyData);
-        }
-
-        const now = new Date();
-        const timeString = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const tsEl = document.getElementById('heroTimestamp');
-        if (tsEl) tsEl.innerText = ` • Diperbarui: ${timeString}`;
-    } catch (e) {
-        document.getElementById('pageTitleText').innerText = generateTitle(anomalyData);
-    }
-}
-
 async function loadDataset() {
     try {
         // d3.csv secara otomatis mem-parsing file CSV dengan delimiter koma
@@ -165,8 +136,8 @@ function processData(data) {
     }
 
     // Generate Cerita & Judul
-    document.getElementById('pageTitleText').innerText = "⏳ Sedang meracik wawasan AI...";
-    fetchAiHeroHeadline(globalAnomalyData, totalSales, totalProfit, data);
+    document.getElementById('pageTitleText').innerText = generateTitle(globalAnomalyData);
+    document.getElementById('storySetupText').innerText = generateStory(totalSales, totalProfit, profitMargin, globalAnomalyData);
 
     // Update KPI UI
     document.getElementById('kpiSales').innerText = formatCurrency(totalSales);
