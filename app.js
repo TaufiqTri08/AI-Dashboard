@@ -93,7 +93,7 @@ async function loadNarasiAi() {
 async function fetchAiHeroHeadline(anomalyData, totalSales, totalProfit) {
     try {
         const dataSummary = `Total Sales: $${totalSales.toFixed(0)}, Total Profit: $${totalProfit.toFixed(0)}.`;
-        const prompt = "Berikan 1 headline dramatis dan singkat (maksimal 8 kata) yang merangkum performa bisnis saat ini.";
+        const prompt = "Buatkan 1 headline spesifik (sekitar 8-15 kata) yang merangkum anomali terbesar saat ini. Wajib cantumkan angka persentase, nominal dolar, atau nama produk/kategori spesifik agar terlihat sangat detail.";
         const aiResponse = await getAiInsight(prompt, anomalyData, dataSummary);
         
         const titleEl = document.getElementById('pageTitleText');

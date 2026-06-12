@@ -7,7 +7,7 @@ export async function getAiInsight(promptText, anomalyContext, dataSummary = "")
     const systemPrompt = `Kamu adalah AI asisten khusus (Business Analyst) untuk Dashboard Analitik Penjualan.
 PENTING: Output HANYA boleh JSON valid, tanpa teks lain!
 {
-    "headline": "Headline pendek & dramatis (Maksimal 6 kata) mengenai anomali saat ini.",
+    "headline": "Headline jurnalistik spesifik (8-15 kata) yang merangkum anomali. Wajib mengandung metrik angka, persentase, atau nama produk/kategori penyebab masalah.",
     "narrative": "Teks jawabanmu.",
     "chart_command": {
         "type": "line|bar|scatter|none",
