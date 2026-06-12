@@ -645,9 +645,6 @@ function drawDonutChart(selector, data, formatCurrency) {
       .innerRadius(radius * 0.5)
       .outerRadius(radius * 0.9);
 
-    const tooltip = d3.select("body").select(".chart-tooltip");
-    const ttip = tooltip.empty() ? d3.select("body").append("div").attr("class", "chart-tooltip").style("opacity", 0) : tooltip;
-
     svg
       .selectAll('allSlices')
       .data(data_ready)
@@ -659,14 +656,14 @@ function drawDonutChart(selector, data, formatCurrency) {
       .style("opacity", 0.8)
       .on("mouseover", function(event, d) {
           d3.select(this).transition().duration(200).attr("d", arcHover).style("opacity", 1);
-          ttip.transition().duration(200).style("opacity", .9);
-          ttip.html(`${d.data.key}<br/>${formatCurrency(d.data.value)}`)
+          tooltip.transition().duration(200).style("opacity", .9);
+          tooltip.html(`${d.data.key}<br/>${formatCurrency(d.data.value)}`)
               .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 28) + "px");
       })
       .on("mouseout", function(event, d) {
           d3.select(this).transition().duration(500).attr("d", arc).style("opacity", 0.8);
-          ttip.transition().duration(500).style("opacity", 0);
+          tooltip.transition().duration(500).style("opacity", 0);
       });
 
 }
