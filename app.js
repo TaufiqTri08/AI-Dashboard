@@ -26,6 +26,9 @@ function initTabs() {
             btn.classList.add('active');
             const targetId = btn.getAttribute('data-target');
             document.getElementById(targetId).classList.add('active');
+
+            // Gulir kembali ke atas saat pindah tab
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
 }
